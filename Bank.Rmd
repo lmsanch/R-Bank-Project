@@ -1,0 +1,375 @@
+---
+title: "HarvardX: PH125.9x Data Science  \n  Bank Marketing Dataset"
+author: "Luis Sànchez"
+date: "June 2020"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_width: 7
+    fig_height: 8
+    df_print: kable
+fontsize: 12pt
+mainfont: Calibri
+sansfont: Calibri
+monofont: Calibri
+---
+# Overview
+
+The Center for Machine Learning and Intelligent Systems, of the Bren School of Information and Computer Science of the University of California, Irvine maintains a large repository of datasets for machine learning projects. This repository contains datasets for regression, classification, clustering and other. The databases for this projject was obtained there. You can clic [here](https://archive.ics.uci.edu/ml/datasets.php), or visit their url https://archive.ics.uci.edu/ml/datasets.php.
+
+This project is related to the direct marketing campaigns of a Portuguese banking institution, which conducted marketing campaigns based on phone calls. Often, more than one contact to the same client was required in order to determine if the product being sold (bank deposits) would be a 'yes' or a 'no' from the client. The set is [here](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing), https://archive.ics.uci.edu/ml/datasets/Bank+Marketing and contains data from 2008 to 2013,  including the period of the 2008 financial crisis.
+
+There are four datasets in the zip file available in the site:
+
+1) bank-additional-full.csv with all examples (41188) and 20 inputs, ordered by date (from May 2008 to November 2010). 
+2) bank-additional.csv with 10% of the examples (4119), randomly selected from 1), and 20 inputs. 
+3) bank-full.csv with all examples and 17 inputs, ordered by date (older version of this dataset with less inputs). 
+4) bank.csv with 10% of the examples and 17 inputs, randomly selected from 3 (older version of this dataset with less inputs). 
+
+The smallest datasets are provided to test more computationally demanding machine learning algorithms. However, for this project, I will work with the bank-additional-full.csv, which as mentioned above, has 41,188 examples and 20 inputs. 
+
+The data includes bank's client data, data related to current and/or previous marketing campaigns,and socioeconomic features (such as interest rates, local consumer price indices, etc.)
+
+The classification goal is to predict if the client will subscribe (yes/no) a term deposit (variable y).
+
+# Background
+
+In a paper written by the original researchers of this data, they stated that "marketing  selling campaigns constitute a typical strategy to enhance business. Companies use direct marketing when targeting segments of customers by contacting them to meet a specific goal. Centralizing customer remote interaction in a contact center  eases operational management of campaigns"
+
+The objective of this project is to measure to what extent machine learning algorithms can select the clients that are more likely to subscribe to a financial product offered. This can be used to better plan expenditures in marketing, thus increasing the bank's profitability. 
+
+The features in consideration are the following:
+
+1) **age**
+2) **job**
+3) **marital status**
+4) **education**
+5) **default**: has credit in default?
+6) **housing**: has housing loan?
+7) **loan**: has personal loan?
+8) **contact**: contact communication type
+9) **month**: last contact month of year
+10) **dayofweek**: last contact day of the week
+11) **duration**: last contact duration, in seconds. Important note: this attribute highly affects the output target (e.g., if duration=0 then y='no'). 
+12) **campaign**: number of contacts performed during this campaign and for this client 
+13) **pdays**: number of days that passed by after the client was last contacted from a previous campaign 
+14) **previous**: number of contacts performed before this campaign and for this client (numeric)
+15) **poutcome**: outcome of the previous marketing campaign 
+16) **emp.var.rate**: employment variation rate - quarterly indicator
+17) **cons.price.idx**: consumer price index - monthly indicator
+18) **cons.conf.idx**: consumer confidence index - monthly indicator
+19) **euribor3m**: euribor 3 month rate - daily indicator
+20) **nr.employed**: number of employees - quarterly indicator
+21) **y**: has the client subscribed a term deposit? (binary: 'yes','no')
+
+Since this is a classical classification model, the main metric I will use for it is the area under the curve (AUC) for receiver operating characteristic (ROC) metric, https://en.wikipedia.org/wiki/Receiver_operating_characteristic . This is a graphical plot that illustrates the diagnostic ability of a binary classifier system (in our case a "yes" or a "no" to offers to buy the product offered by the bank). Under this metric, I will test:
+
+1) A Decision Tree classifier 
+2) A Random Forest classifier 
+3) An XGBoost classifier 
+
+We will start with installing the relevant packages, and downloading and inspecting the data:  
+\scriptsize
+```{r load libraries, echo = FALSE, message = FALSE, warning = FALSE, eval = TRUE}
+
+library(tidyverse)
+library(caret)
+library(lubridate)
+
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+
+library(ggplot2)
+library(caret)
+library(e1071)
+
+library(rpart)
+library(rpart.plot)
+library(rattle)
+
+library(randomForest)
+library(caTools)
+library(descr)
+
+library(pROC)
+library(Matrix)
+library(xgboost)
+```
+
+```{r Install libraries & download files, echo = TRUE, message = FALSE, warning = FALSE, eval = TRUE}
+if(!require(tidyverse)) 
+  install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) 
+  install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(lubridate)) 
+  install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(gridExtra)) 
+  install.packages("gridExtra", repos = "http://cran.us.r-project.org")
+if(!require(knitr)) 
+  install.packages("knitr", repos = "http://cran.us.r-project.org")
+if(!require(kableExtra)) 
+  install.packages("kableExtra", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) 
+  install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(caret)) 
+  install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(e1071)) 
+  install.packages("e1071", repos = "http://cran.us.r-project.org")
+if(!require(rpart)) 
+  install.packages("rpart", repos = "http://cran.us.r-project.org")
+if(!require(rpart.plot)) 
+  install.packages("rpart.plot", repos = "http://cran.us.r-project.org")
+if(!require(rattle)) 
+  install.packages("rattle", repos = "http://cran.us.r-project.org")
+if(!require(randomForest)) 
+  install.packages("randomForest", repos = "http://cran.us.r-project.org")
+if(!require(caTools)) 
+  install.packages("caTools", repos = "http://cran.us.r-project.org")
+if(!require(descr)) 
+  install.packages("descr", repos = "http://cran.us.r-project.org")
+if(!require(pROC)) 
+  install.packages("pROC", repos = "http://cran.us.r-project.org")
+if(!require(Matrix)) 
+  install.packages("Matrix", repos = "http://cran.us.r-project.org")
+if(!require(xgboost)) 
+  install.packages("xgboot", repos = "http://cran.us.r-project.org")
+
+# here I download the file
+wd = getwd()
+dl <- tempfile(tmpdir = wd)
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank-additional.zip"
+download.file(url, dl)
+unzip(dl, junkpaths = TRUE)
+data <- read.table("./bank-additional/bank-additional-full.csv", 
+                   header = T, 
+                   sep = ";")
+unlink(dl)
+```
+\normalsize
+Below are a few samples of out data samples, which their corresponding values.
+
+```{r edx_summary_first_8, echo=FALSE}
+as_tibble(data[1:5, 1:8])%>%head()%>%
+  kable()%>%kable_styling()%>%
+  column_spec(3)%>%
+  row_spec(0,bold=T)
+```
+
+```{r edx_summary_9-15, echo=FALSE}
+as_tibble(data[1:5, 9:15])%>%head()%>%
+  kable()%>%kable_styling()%>%
+  column_spec(3)%>%
+  row_spec(0,bold=T)
+```
+
+```{r edx_summary_16_21, echo=FALSE}
+as_tibble(data[1:5, 16:21])%>%head()%>%
+  kable()%>%kable_styling()%>%
+  column_spec(3)%>%
+  row_spec(0,bold=T)
+```
+The types of data (categorical numerical, etc.) as well as missing values (if any) can be seen below:
+
+```{r type, echo=TRUE}
+sapply(data, class)
+sum(is.na(data))
+```
+The distribution of the data in the features can be seen in the Appendix.
+
+# Modelling
+
+As mentioned before, I will create 3 models:
+
+1) A Decision Tree classifier: Here I will attempt to graphically show the features that are more relevant in this dataset in terms of explanatory power for the yes or no decision of customers, in an out of sample set. For more information about Decision Trees, Wikipedia has a good entry in this url: https://en.wikipedia.org/wiki/Decision_tree
+
+2) A Random Forest classifier: Similarly, I will also attempt to show feature importance and the model's ROC. Here is Wikipedia's entry https://en.wikipedia.org/wiki/Random_forest for a Random Forest classifier. 
+
+3) An XGBoost classifier: the XGBoost algorithm is a machine learning algorithm that has recently been dominating applied machine learning and Kaggle competitions for structured or tabular data. It is basically an ensemble of decision trees which are fit sequentially, and each new tree makes up for the errors of the previously existing set of trees, trying to correct the residual errors of the last version of the model. 
+
+To test our models, we will split the dataset in 75% for training and 25% for testing, and create a tabular presentation of out data. Again, our metric to judge the accuracy of the classification model will be the ROC curve explained before.
+
+```{r set seed, echo=FALSE}
+set.seed(1, sample.kind="Rounding")
+```
+
+\scriptsize
+```{r partitioning data, echo=TRUE}
+test_index <- createDataPartition(y = data$y, times = 1, p = 0.25, list = FALSE)
+train <- data[-test_index,]
+test <- data[test_index,]
+```
+\normalsize
+
+
+## Decision Tree
+Below is the implementation of the Decision Tree and its AUC-ROC curve.  
+
+```{r decision tree, echo=TRUE}
+# setting up the decision tree
+train_dt<-rpart(y ~ ., train , method = 'class')
+
+# predictions and probbailities
+predictions <- predict(train_dt, test , type = "class")
+probabilities <- predict(train_dt, test , type = "prob")
+
+# metrics
+CrossTable(test$y, predictions,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual', 'predicted'))
+# AUCROC
+data_roc <-roc(test$y, probabilities[,2])
+print(data_roc)
+```
+
+In the next page we can see that the Decision Tree achieved a 87.41% AUC-ROC in the test set. Let's visualize the actual decision tree and its ROC curve.
+
+```{r metrics DT, echo=TRUE}
+
+# par(mfrow=c(2,1))
+fancyRpartPlot(train_dt , digits=2, caption="Decision Tree")
+plot(data_roc, main="AUC-ROC for Decision Tree",col="blue")
+```
+\pagebreak
+
+## Random Forest
+
+Below is the implementation of the Random Forest algorithm and its AUC-ROC curve. 
+
+```{r random forest, echo=TRUE}
+# setting up the Random Forest
+
+rf_classifier = randomForest(y ~ ., train, 
+                             ntree=200, 
+                             mtry=3, 
+                             importance=TRUE)
+
+# predict
+rf_pred <- predict( rf_classifier, 
+                    test, 
+                    type = "class")
+rf_prob <- predict( rf_classifier, 
+                    test, 
+                    type = "prob")
+
+# Cross table validation for CART
+CrossTable(test$y, 
+           rf_pred,
+           prop.chisq = FALSE, 
+           prop.c = FALSE, 
+           prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+# ROC
+rf_roc <-roc(test$y, 
+             rf_prob[,2])
+print(rf_roc)
+```
+
+Here can see that the Random Forest achieved a 94.35% ROC in the test set. The feature importance of the model and its AUC-ROC curve follows in the next page.
+
+```{r metrics RF, echo=TRUE}
+# par(mfrow=c(2,1))
+varImpPlot(rf_classifier)
+plot(rf_roc, 
+     main="AUC-ROC for Random Forest",
+     percent=TRUE, 
+     col="red")
+```
+\pagebreak
+
+## XGBoost
+
+Below is the implementation of the extreme gradient boosting algorithm and its AUC-ROC curve. In setting this up, we need to be particularly careful, since XGBoost only accepts numerical values. 
+
+Therefore, we need to transform all the categorical values into "dummy" columns. For example, a categorical column labeled "fruit" that contains "apples", "oranges" and "pears" as elements; gets transformed into spare vectors, for example, "fruit_apple", "fruit_oranges", and "fruit_pears"; each one containing "1" or "0" to indicate the presence or absence of that feature. 
+
+Needless to say, in some datasets, this might represent a computational challenge, since it is possible to expand the dimension of our dataset a great deal.
+
+
+```{r settting up sparse matrix, echo=TRUE}
+sparse.matrix.train= sparse.model.matrix(y~.-1, data = train) 
+# creates sparse matrix from the train set
+output.vector.train <- as.numeric(as.factor(train$y))-1 
+# transforms y into "1" and "0", the values OK with xgboost
+sparse.matrix.test=  sparse.model.matrix(y~.-1, data = test) 
+# creates sparse matrix from the test set
+output.vector.test <- as.numeric(as.factor(test$y))-1 
+# transforms y into "1" and "0", the values OK with xgboost
+```
+
+
+The model was set with evaluation metric = 'auc', to maximize AUC-ROC score, and objective = "binary:logistic", for binary classification.
+
+
+```{r settting up XGBoost, echo=TRUE}
+bst= xgboost(data = sparse.matrix.train, # train sparse matrix 
+             label = output.vector.train, # output vector to be predicted 
+             eval.metric = 'auc', # model maximizes auc
+             objective = "binary:logistic", # clasification
+             max.depth = 3,
+             nround = 250,
+             verbose = 0) #dont print out results of trainning to PDF
+
+importance <- xgb.importance(feature_names = colnames(sparse.matrix.train), 
+                             model = bst)
+```
+
+```{r XGBoost metrics, echo=TRUE}
+probabilities.xgb <- predict(bst, sparse.matrix.test)
+predictions.xgb <- as.numeric(probabilities.xgb > 0.5) # transform prediction to labels
+
+# metrics
+CrossTable(output.vector.test, 
+           predictions.xgb,
+           prop.chisq = FALSE, 
+           prop.c = FALSE, 
+           prop.r = FALSE,
+           dnn = c('actual', 'predicted'))
+roc.xgb <-roc(output.vector.test, probabilities.xgb)
+print(roc.xgb)
+```
+
+Here can see that the XGBoost model achieved a 94.69% AUC-ROC in the test set. Let's visualize the top 15 features of the model and the model's out of sample AUC-ROC curve.
+
+```{r XGBoost ROC, echo=TRUE}
+# ROC
+# par(mfrow=c(2,1))
+xgb.plot.importance(importance_matrix = importance, top_n = 15)
+plot(roc.xgb, main="AUC-ROC for XGBoost", percent=TRUE, col="blue")
+```
+\pagebreak
+
+
+# Results & Conclusion
+
+We successfully built several machine learning models to forecast the likelihood of a particular client of the Portuguese bank to buy additional services from them. 
+
+The results of the Random Forest model and the XGBoost model are very similar in score, however, the ranking of the feature importance of each model is slightly different, as we saw in previous charts. 
+
+Improvements in the scores could be achieved by exploring hyper parameter tuning, cross validation, etc., and even ensemble models, however, they are beyond the scope of this assignment. 
+
+Below are the final rankings.
+
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+Model         & AUC-ROC Score \\ \hline
+Decision Tree & 0.8741    \\ \hline
+Random Forest & 0.9435    \\ \hline
+XGBoost       & 0.9469    \\ \hline
+\end{tabular}
+\centering
+
+
+\pagebreak
+
+# Appendix
+```{r Plotting the data1, echo=FALSE}
+par(mfrow=c(4,2))
+for(i in 1:length(data))
+{barplot(prop.table(table(data[,i])) , 
+         xlab=names(data[i]), ylab= "Frequency (%)")}
+```
