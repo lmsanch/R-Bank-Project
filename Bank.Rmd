@@ -17,7 +17,7 @@ monofont: Calibri
 ---
 # Overview
 
-The Center for Machine Learning and Intelligent Systems, of the Bren School of Information and Computer Science of the University of California, Irvine maintains a large repository of datasets for machine learning projects. This repository contains datasets for regression, classification, clustering and other. The databases for this projject was obtained there. You can clic [here](https://archive.ics.uci.edu/ml/datasets.php), or visit their url https://archive.ics.uci.edu/ml/datasets.php.
+The Center for Machine Learning and Intelligent Systems, of the Bren School of Information and Computer Science of the University of California, Irvine maintains a large repository of datasets for machine learning projects. This repository contains datasets for regression, classification, clustering and other. The databases for this project was obtained there. You can click [here](https://archive.ics.uci.edu/ml/datasets.php), or visit their url https://archive.ics.uci.edu/ml/datasets.php.
 
 This project is related to the direct marketing campaigns of a Portuguese banking institution, which conducted marketing campaigns based on phone calls. Often, more than one contact to the same client was required in order to determine if the product being sold (bank deposits) would be a 'yes' or a 'no' from the client. The set is [here](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing), https://archive.ics.uci.edu/ml/datasets/Bank+Marketing and contains data from 2008 to 2013,  including the period of the 2008 financial crisis.
 
@@ -143,7 +143,7 @@ dl <- tempfile(tmpdir = wd)
 url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank-additional.zip"
 download.file(url, dl)
 unzip(dl, junkpaths = TRUE)
-data <- read.table("./bank-additional/bank-additional-full.csv", 
+data <- read.table("bank-additional-full.csv", 
                    header = T, 
                    sep = ";")
 unlink(dl)
@@ -342,17 +342,16 @@ plot(roc.xgb, main="AUC-ROC for XGBoost", percent=TRUE, col="blue")
 \pagebreak
 
 
-# Results & Conclusion
+# Results
 
-We successfully built several machine learning models to forecast the likelihood of a particular client of the Portuguese bank to buy additional services from them. 
+We successfully built several machine learning models to forecast the likelihood of a particular client of the Portuguese bank to buy additional services from them.
 
-The results of the Random Forest model and the XGBoost model are very similar in score, however, the ranking of the feature importance of each model is slightly different, as we saw in previous charts. 
+The models chosen show relative high AUC-ROC curves for this set, which looks very promising for the applicability in production.
 
 Improvements in the scores could be achieved by exploring hyper parameter tuning, cross validation, etc., and even ensemble models, however, they are beyond the scope of this assignment. 
 
 Below are the final rankings.
 
-\centering
 \begin{tabular}{|l|l|}
 \hline
 \rowcolor[HTML]{9B9B9B} 
@@ -361,9 +360,16 @@ Decision Tree & 0.8741    \\ \hline
 Random Forest & 0.9435    \\ \hline
 XGBoost       & 0.9469    \\ \hline
 \end{tabular}
-\centering
 
+# Conclusions
 
+The results of the Random Forest model and the XGBoost model are very similar in score, however, the ranking of the feature importance of each model is slightly different, as we saw in previous charts. This might be an interesting area for further exploration.
+
+Since the AUC-ROC implies certain levels of acceptable False Positives and False Negatives in the results of a machine learning model, in practice, I believe that the model can definitely be improved by taking into account the opportunity cost of False Positives vs False Negatives. 
+
+For example, what is the cost of False Positive relative to False Negatives, meaning, should the model be improved to minimize FP or FN to achieve a specific financial return objective?
+
+This sort of business decision is usually absent in machine learning exercises, however, it is a very fundamental part of why these models are built to begin with.
 \pagebreak
 
 # Appendix

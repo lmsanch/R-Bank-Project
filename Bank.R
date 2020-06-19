@@ -69,7 +69,7 @@ dl <- tempfile(tmpdir = wd)
 url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank-additional.zip"
 download.file(url, dl)
 unzip(dl, junkpaths = TRUE)
-data <- read.table("./bank-additional/bank-additional-full.csv", 
+data <- read.table("bank-additional-full.csv", 
                    header = T, 
                    sep = ";")
 unlink(dl)
